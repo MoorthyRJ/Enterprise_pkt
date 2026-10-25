@@ -1,0 +1,130 @@
+ASA Version 9.6(1)
+!
+hostname ciscoasa
+names
+!
+interface GigabitEthernet1/1
+ nameif inside
+ security-level 100
+ ip address 50.0.0.2 255.255.255.0
+!
+interface GigabitEthernet1/2
+ nameif outside
+ security-level 0
+ ip address 20.0.0.1 255.255.255.252
+!
+interface GigabitEthernet1/3
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface GigabitEthernet1/4
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface GigabitEthernet1/5
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface GigabitEthernet1/6
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface GigabitEthernet1/7
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface GigabitEthernet1/8
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface Management1/1
+ management-only
+ nameif MAINSIDE
+ security-level 100
+ ip address 192.168.0.1 255.255.255.252
+!
+object network INSIDE
+ subnet 50.0.0.0 255.255.255.0
+ nat (inside,outside) dynamic interface
+object network LOCALLAN
+ subnet 50.0.0.0 255.255.255.0
+object network MPC
+ host 50.0.0.100
+ nat (inside,outside) static 50.0.0.100
+object network REMOTELAN
+ subnet 60.0.0.0 255.255.255.0
+object network server1
+ host 50.0.0.10
+ nat (inside,outside) static 50.0.0.10
+object network server2
+ host 50.0.0.20
+ nat (inside,outside) static 50.0.0.20
+object network server3
+ host 50.0.0.30
+ nat (inside,outside) static 50.0.0.30
+object network server4
+ host 50.0.0.40
+ nat (inside,outside) static 50.0.0.40
+object network server5
+ host 50.0.0.50
+ nat (inside,outside) static 50.0.0.50
+!
+route outside 0.0.0.0 0.0.0.0 20.0.0.2 1
+!
+access-list SERVER_INBOUND extended permit ip object REMOTELAN object LOCALLAN
+access-list SERVER_INBOUND extended permit tcp host 20.0.1.1 host 50.0.0.10 eq ftp
+access-list L2L extended permit ip object LOCALLAN object REMOTELAN
+!
+!
+access-group SERVER_INBOUND in interface outside
+!
+!
+class-map inspection_default
+ match default-inspection-traffic
+!
+policy-map type inspect dns preset_dns_map
+ parameters
+  message-length maximum 512
+policy-map global_policy
+ class inspection_default
+  inspect dns preset_dns_map
+  inspect ftp 
+  inspect icmp 
+  inspect tftp 
+ class class-default
+!
+service-policy global_policy global
+!
+telnet timeout 5
+ssh timeout 5
+!
+!
+crypto ipsec ikev1 transform-set esp-aes-256 esp-3des esp-sha-hmac
+crypto ipsec ikev1 transform-set L2L esp-aes 256 esp-sha-hmac
+!
+crypto map CMAP 10 match address L2L
+crypto map CMAP 10 set peer 20.0.1.1 
+crypto map CMAP 10 set ikev1 transform-set L2L 
+crypto map CMAP interface outside
+crypto ikev1 enable outside
+crypto ikev1 policy 10
+ encr aes
+ authentication pre-share
+ group 5
+!
+tunnel-group 20.0.1.1 type ipsec-l2l
+tunnel-group 20.0.1.1 ipsec-attributes
+ ikev1 pre-shared-key dummykey
+!

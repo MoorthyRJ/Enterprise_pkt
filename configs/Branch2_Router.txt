@@ -1,0 +1,93 @@
+Current configuration : 1468 bytes
+!
+version 15.1
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname Router
+!
+!
+!
+!
+ip dhcp excluded-address 200.200.200.1
+ip dhcp excluded-address 200.200.100.1
+!
+ip dhcp pool Branch4VLAN2
+ network 200.200.100.0 255.255.255.0
+ default-router 200.200.100.1
+ dns-server 8.8.8.8
+ip dhcp pool Branch4VLAN1
+ network 200.200.200.0 255.255.255.0
+ default-router 200.200.200.1
+ dns-server 8.8.8.8
+!
+!
+!
+ip cef
+no ipv6 cef
+!
+!
+!
+license udi pid CISCO2901/K9 sn FTX152453H7-
+!
+!
+!
+!
+!
+spanning-tree mode pvst
+!
+!
+!
+!
+!
+!
+interface GigabitEthernet0/0
+ ip address 60.0.0.1 255.255.255.0
+ ip nat outside
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/1
+ no ip address
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/1.10
+ encapsulation dot1Q 10
+ ip address 200.200.100.1 255.255.255.0
+ ip nat inside
+!
+interface GigabitEthernet0/1.20
+ encapsulation dot1Q 20
+ ip address 200.200.200.1 255.255.255.0
+ ip nat inside
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+ip nat inside source list 1 interface GigabitEthernet0/0 overload
+ip nat inside source static 200.200.100.10 60.0.0.10 
+ip nat inside source static 200.200.200.10 60.0.0.20 
+ip nat inside source static 200.200.200.100 60.0.0.100 
+ip classless
+ip route 0.0.0.0 0.0.0.0 60.0.0.2 
+!
+ip flow-export version 9
+!
+!
+access-list 1 permit 200.200.0.0 0.0.255.255
+!
+!
+!
+line con 0
+!
+line aux 0
+!
+line vty 0 4
+ login
+!
+!
+!
+end

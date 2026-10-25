@@ -1,0 +1,87 @@
+
+Current configuration : 1589 bytes
+!
+version 15.1
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname Router
+!
+!
+!
+!
+ip dhcp excluded-address 192.168.100.1
+ip dhcp excluded-address 192.168.50.1
+!
+ip dhcp pool VLAN10POOL
+ network 192.168.100.0 255.255.255.0
+ default-router 192.168.100.1
+ dns-server 8.8.8.8
+ip dhcp pool VLAN20POOL
+ network 192.168.50.0 255.255.255.0
+ default-router 192.168.50.1
+ dns-server 8.8.8.8
+!
+!
+ip cef
+no ipv6 cef
+!
+!
+license udi pid CISCO2911/K9 sn FTX1524SKW5-
+!
+!
+spanning-tree mode pvst
+!
+!
+interface GigabitEthernet0/0
+ ip address 50.0.0.1 255.255.255.0
+ ip nat outside
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/1
+ ip address 192.168.50.1 255.255.255.0
+ ip nat inside
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/2
+ ip address 192.168.100.1 255.255.255.0
+ ip nat inside
+ duplex auto
+ speed auto
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+ip nat inside source list 10 interface GigabitEthernet0/0 overload
+ip nat inside source static 192.168.50.50 50.0.0.50 
+ip nat inside source static 192.168.50.40 50.0.0.40 
+ip nat inside source static 192.168.50.30 50.0.0.30 
+ip nat inside source static 192.168.50.20 50.0.0.20 
+ip nat inside source static 192.168.100.10 50.0.0.10 
+ip nat inside source static 192.168.50.100 50.0.0.100 
+ip classless
+ip route 0.0.0.0 0.0.0.0 50.0.0.2 
+!
+ip flow-export version 9
+!
+!
+access-list 10 permit 192.168.50.0 0.0.0.255
+access-list 10 permit 192.168.100.0 0.0.0.255
+!
+!
+!
+!
+line con 0
+!
+line aux 0
+!
+line vty 0 4
+ login
+!
+!
+!
+end

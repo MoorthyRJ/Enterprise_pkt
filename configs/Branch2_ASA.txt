@@ -1,0 +1,119 @@
+ASA Version 9.6(1)
+!
+hostname ciscoasa
+names
+!
+interface GigabitEthernet1/1
+ nameif OUTSIDE
+ security-level 0
+ ip address 20.0.1.1 255.255.255.252
+!
+interface GigabitEthernet1/2
+ nameif INSIDE
+ security-level 100
+ ip address 60.0.0.2 255.255.255.0
+!
+interface GigabitEthernet1/3
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface GigabitEthernet1/4
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface GigabitEthernet1/5
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface GigabitEthernet1/6
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface GigabitEthernet1/7
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface GigabitEthernet1/8
+ no nameif
+ no security-level
+ no ip address
+ shutdown
+!
+interface Management1/1
+ management-only
+ nameif MAINSIDE
+ security-level 100
+ ip address 192.168.0.1 255.255.255.252
+!
+object network INSIDE
+ subnet 60.0.0.0 255.255.255.0
+ nat (INSIDE,OUTSIDE) dynamic interface
+object network LOCAL_LAN
+ subnet 60.0.0.0 255.255.255.0
+object network REMOTE_LAN
+ subnet 50.0.0.0 255.255.255.0
+object network server-1
+ host 60.0.0.10
+ nat (INSIDE,OUTSIDE) static 60.0.0.10
+object network server-2
+ host 60.0.0.20
+ nat (INSIDE,OUTSIDE) static 60.0.0.20
+object network serverPC
+ host 60.0.0.100
+ nat (INSIDE,OUTSIDE) static 60.0.0.100
+!
+route OUTSIDE 0.0.0.0 0.0.0.0 20.0.1.2 1
+!
+access-list OUT_IN extended permit ip object REMOTE_LAN object LOCAL_LAN
+access-list OUT_IN extended permit tcp host 20.0.0.1 host 60.0.0.20 eq ftp
+access-list L2L extended permit ip object LOCAL_LAN object REMOTE_LAN
+!
+!
+access-group OUT_IN in interface OUTSIDE
+!
+!
+class-map inspection_default
+ match default-inspection-traffic
+!
+policy-map type inspect dns preset_dns_map
+ parameters
+  message-length maximum 512
+policy-map global_policy
+ class inspection_default
+  inspect dns preset_dns_map
+  inspect ftp 
+  inspect icmp 
+  inspect tftp 
+!
+service-policy global_policy global
+!
+telnet timeout 5
+ssh timeout 5
+!
+!
+crypto ipsec ikev1 transform-set L2L esp-aes 256 esp-sha-hmac
+!
+crypto map CMAP 10 match address L2L
+crypto map CMAP 10 set peer 20.0.0.1 
+crypto map CMAP 10 set ikev1 transform-set L2L 
+crypto map CMAP interface OUTSIDE
+crypto ikev1 enable OUTSIDE
+crypto ikev1 policy 10
+ encr aes
+ authentication pre-share
+ group 5
+!
+tunnel-group 20.0.0.1 type ipsec-l2l
+tunnel-group 20.0.0.1 ipsec-attributes
+ ikev1 pre-shared-key dummykey
+!
