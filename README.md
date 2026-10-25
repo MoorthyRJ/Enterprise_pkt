@@ -6,7 +6,7 @@ I built this to practise subnetting, VLANs, DHCP, the different kinds of NAT, AC
 
 Built with Cisco Packet Tracer 9.0.0.
 
-![Full topology](docs/images/topology.png)
+![Full topology](https://github.com/MoorthyRJ/Enterprise_pkt/blob/main/Photos/whole_Topology.png)
 
 ## What the network is supposed to do
 
@@ -148,14 +148,13 @@ ip route 100.100.100.0 255.255.255.0 20.0.2.1
 │   ├── asa2.txt
 │   ├── isp-router.txt
 │   └── cloud-router.txt
-└── docs/
-    ├── enterprise-network-carousel.pdf
-    └── images/
-        ├── topology.png
-        ├── branch1.png
-        ├── branch2.png
-        ├── cloud.png
-        └── ipsec-sa-proof.png
+└── enterprise-network.pdf
+└── photos/
+    ├── topology.png
+    ├── branch1.png
+    ├── branch2.png
+    ├── cloud.png
+    └── ipsec-sa-proof.png
 ```
 
 The snippets above are trimmed. The full running configs are in `configs/`.
@@ -186,10 +185,9 @@ Two tips for Packet Tracer. The first ping across a new path often times out bec
 ## Problems I ran into
 
 1. **Published servers were unreachable even though the ACL was right.** The ASA was still applying the PAT rule to their addresses. Giving each server its own identity NAT entry fixed it.
-2. **The tunnel would not come up and the ASA said there was no matching policy.** The crypto map had lost its transform-set. Adding it back fixed it.
-3. **VPN traffic reached the ASA and was dropped.** Packet Tracer checked the decrypted traffic against the outside ACL, so it needed an explicit permit.
-4. **The first ping always failed.** It was ARP. Pinging the peer once before testing the tunnel got rid of it.
-
+2. **VPN traffic reached the ASA and was dropped.** Packet Tracer checked the decrypted traffic against the outside ACL, so it needed an explicit permit.
+3. **The first ping always failed.** It was ARP. Pinging the peer once before testing the tunnel got rid of it.
+4. **object network group** Not available in Packet Tracker so creater a identity NAT for every IP
 ## What I would change in a real network
 
 - Use private address space (RFC 1918) inside and a real public range only on the internet side.
@@ -199,4 +197,4 @@ Two tips for Packet Tracer. The first ping across a new path often times out bec
 
 ## About
 
-Made by `<your name>`. If you see something I could do better, open an issue or message me on LinkedIn: `<your LinkedIn link>`.
+Made by `JEYA MOORTHY R`. If you see something I could do better, open an issue or message me on LinkedIn: `www.linkedin.com/in/jeyamoorthy-r`.
