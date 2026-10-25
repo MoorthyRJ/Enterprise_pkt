@@ -107,8 +107,8 @@ ASA1 sits in front of the cloud servers. Its ACL only allows IP traffic from 20.
 ### IPsec VPN
 
 The tunnel runs between ASA0 and ASA2. Phase 1 uses IKEv1 with AES, a pre-shared key and DH group 5. Phase 2 uses ESP with AES-256 and SHA. This is the ASA0 side, and ASA2 is the mirror image (peer 20.0.0.1 and a reversed crypto ACL).
-![sa1](Photos/Branch1ASA-Crypto ipsec sa.png) 
-![sa2](Photos/Branch2ASA-Crypto ipsec sa.png) 
+![Photos/Branch1ASA-Crypto ipsec sa.png](https://github.com/MoorthyRJ/Enterprise_pkt/blob/main/Photos/Branch1ASA-Crypto%20ipsec%20sa.png) 
+![Photos/Branch2ASA-Crypto ipsec sa.png](https://github.com/MoorthyRJ/Enterprise_pkt/blob/main/Photos/Branch2ASA-Crypto%20ipsec%20sa.png) 
 
 ```
 crypto ikev1 enable outside
