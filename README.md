@@ -6,7 +6,7 @@ I built this to practise subnetting, VLANs, DHCP, the different kinds of NAT, AC
 
 Built with Cisco Packet Tracer 9.0.0.
 
-![Full topology]((https://github.com/MoorthyRJ/Enterprise_pkt/blob/main/Photos/whole_Topology.png))
+![Full topology](https://github.com/MoorthyRJ/Enterprise_pkt/blob/main/Photos/whole_Topology.png)
 
 ## What the network is supposed to do
 
