@@ -2,7 +2,7 @@
 
 Two branch offices and a cloud services zone, joined by one ISP router. Every site has its own Cisco ASA firewall, and the two branches also have a site-to-site IPsec VPN between them.
 
-I built this to practise subnetting, VLANs, DHCP, the different kinds of NAT, ACLs and IPsec in one project, instead of in separate small labs. I tried to make it behave like a small company network, so the access rules matter as much as the connectivity.
+I built this to practice subnetting, VLANs, DHCP, DMZ, the different kinds of NAT, ACLs and IPsec in one project, instead of in separate small labs. I tried to make it behave like a small company network, so the access rules matter as much as the connectivity.
 
 Built with Cisco Packet Tracer 9.0.0.
 
@@ -14,6 +14,8 @@ Built with Cisco Packet Tracer 9.0.0.
 - Each branch can reach the other branch's published servers, and nothing else there.
 - The Server PC in each branch (50.0.0.100 and 60.0.0.100) can talk to the other branch over the IPsec VPN.
 - Normal PCs in one branch cannot reach the PCs in the other branch.
+- In the cloud zone, the client PCs can use the DMZ servers, but the servers cannot start connections to the clients.
+- The branches can reach the DMZ servers and nothing else in the cloud zone.
 
 ## Layout
 
@@ -21,7 +23,7 @@ Built with Cisco Packet Tracer 9.0.0.
 |---|---|
 | Branch 1 | Router, ASA0, an office LAN (PC1 to PC3, Server3) and a server LAN (Server0, Server1, Server2, Server4, Server PC) |
 | Branch 2 | Router, ASA2, two VLANs with office PCs, two servers and a Server PC |
-| Cloud services | ASA1, three servers on 100.100.100.0/24, and a small client LAN behind its own router |
+| Cloud services |	ASA1 with three zones: a small client LAN behind its own router (inside), a DMZ with three servers, and the ISP link (outside) |
 | ISP | One router with a link to each of the three ASAs |
 
 ## Addressing
@@ -37,7 +39,8 @@ Built with Cisco Packet Tracer 9.0.0.
 | ASA0 to ISP | 20.0.0.0/30 | ASA0 is 20.0.0.1 |
 | ASA2 to ISP | 20.0.1.0/30 | ASA2 is 20.0.1.1 |
 | ASA1 to ISP | 20.0.2.0/30 | ASA1 is 20.0.2.1 |
-| Cloud servers | 100.100.100.0/24 | Three servers, including 100.100.100.10 and 100.100.100.20 |
+|Cloud client side	| 30.0.0.0/29	| ASA1 inside is 30.0.0.2, the cloud router is 30.0.0.1 |
+|Cloud DMZ	| 100.100.100.0/24	| ASA1 DMZ interface is .1, servers at .10, .20 and .30 |
 
 The 20.x, 50.x, 60.x, 100.x and 200.x ranges are public address space. I used them as lab addresses only, so please don't copy them into a real network.
 
@@ -50,8 +53,8 @@ A normal PC in Branch 1 going to a cloud server:
 1. The PC (192.168.x.x) sends the packet to the branch router.
 2. The router uses PAT and changes the source to 50.0.0.1.
 3. ASA0 uses PAT again and changes it to 20.0.0.1.
-4. The ISP forwards it to ASA1, whose ACL allows 20.0.0.1.
-5. The server answers and the reply follows the same path back.
+4.The ISP forwards it to ASA1, whose ACL allows 20.0.0.1 to reach the DMZ servers.
+5.The server answers and the reply follows the same path back.
 
 A server behaves differently. The router has a static NAT entry for it (for example 192.168.50.50 to 50.0.0.50) and the ASA has an identity NAT entry, so it keeps the address 50.0.0.50 all the way through. That is why the cloud ASA allows 50.0.0.0/24 and 60.0.0.0/24 as well as the two ASA outside addresses.
 
@@ -100,9 +103,40 @@ object network server1
 
 Packet Tracer's ASA rejects the manual (twice) NAT command, so I used identity NAT on each host instead.
 
-### Cloud ASA
+### Cloud ASA and the DMZ
 
-ASA1 sits in front of the cloud servers. Its ACL only allows IP traffic from 20.0.0.1, 20.0.1.1, 50.0.0.0/24 and 60.0.0.0/24.
+# ASA1 has three zones, so the servers sit in a DMZ instead of on the same network as the client PCs.
+
+|Interface	| Name |	Security level	| Subnet |
+|Gi1/1	| OUTSIDE	| 0	| 20.0.2.0/30, towards the ISP |
+|Gi1/2	| INSIDE	| 100	| 30.0.0.0/29, the cloud router and the client LAN |
+|Gi1/3 |	DMZ	| 50	|100.100.100.0/24, the three servers |
+
+# The security levels do most of the work. Traffic from a higher level to a lower level is allowed by default, and the other direction is blocked unless an ACL permits it. That gives:
+
+- INSIDE to DMZ is allowed, so the client PCs can use the servers.
+- DMZ to INSIDE is blocked, so a compromised server cannot reach the clients.
+- OUTSIDE to DMZ is allowed only where the ACL says so.
+- OUTSIDE to INSIDE is blocked.
+
+The outside ACL only allows IP traffic from 20.0.0.1, 20.0.1.1, 50.0.0.0/24 and 60.0.0.0/24, and only towards the DMZ subnet:
+```
+access-list SERVER_INBOUND extended permit ip 50.0.0.0 255.255.255.0 100.100.100.0 255.255.255.0
+access-list SERVER_INBOUND extended permit ip 60.0.0.0 255.255.255.0 100.100.100.0 255.255.255.0
+access-list SERVER_INBOUND extended permit ip host 20.0.0.1 100.100.100.0 255.255.255.0
+access-list SERVER_INBOUND extended permit ip host 20.0.1.1 100.100.100.0 255.255.255.0
+access-group SERVER_INBOUND in interface OUTSIDE
+```
+Each server has an identity NAT entry between the DMZ and the outside, so it keeps its own address. The client LAN uses PAT towards the outside.
+```
+object network server1
+ host 100.100.100.10
+ nat (DMZ,OUTSIDE) static 100.100.100.10
+object network INSIDE
+ subnet 30.0.0.0 255.255.255.248
+ nat (INSIDE,OUTSIDE) dynamic interface
+```
+ASA1 also has a management-only interface (192.168.0.1/30) for an admin PC.
 
 ### IPsec VPN
 
